@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   forgotPasswordRequest,
   loginUser,
@@ -59,6 +59,26 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   const [resetCode, setResetCode] = useState<string>('');
   const [resetNewPassword, setResetNewPassword] = useState<string>('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState<string>('');
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab('LOGIN');
+      setResetStep('REQUEST');
+      setErrorMessage(null);
+      setStatusMessage(initialMessage);
+    }
+  }, [open, initialMessage]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -187,10 +207,22 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
           <h3>
             {currentUser
               ? 'TU Ilmenau Account Session'
-              : 'IlmExchange Campus Authentication'}
+              : 'IlmExchange'}
           </h3>
-          <button type="button" className="modal-close-btn" onClick={onClose}>
-            ESC
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 
@@ -207,17 +239,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button
-                  type="button"
-                  className="btn-primary-teal"
-                  onClick={() => {
-                    onClose();
-                    onOpenUserDashboard();
-                  }}
-                >
-                  Open My Ads &amp; Lifecycle Status Dashboard
-                </button>
-
                 {currentUser.role === 'ADMIN' && (
                   <button
                     type="button"
@@ -244,37 +265,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
             </div>
           ) : (
             <>
-              <div className="auth-tabs-bar" role="tablist">
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${activeTab === 'LOGIN' ? 'active' : ''}`}
-                  onClick={() => switchTab('LOGIN')}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${activeTab === 'REGISTER' ? 'active' : ''}`}
-                  onClick={() => switchTab('REGISTER')}
-                >
-                  Register
-                </button>
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${activeTab === 'VERIFY_EMAIL' ? 'active' : ''}`}
-                  onClick={() => switchTab('VERIFY_EMAIL')}
-                >
-                  Verify Email
-                </button>
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${activeTab === 'FORGOT_PASSWORD' ? 'active' : ''}`}
-                  onClick={() => switchTab('FORGOT_PASSWORD')}
-                >
-                  Reset Password
-                </button>
-              </div>
-
               {statusMessage && <div className="status-banner">{statusMessage}</div>}
               {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
@@ -310,23 +300,29 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       marginBottom: '12px',
-                      fontSize: '11.5px',
+                      fontSize: '12px',
                       color: '#64748B',
                     }}
                   >
-                    <span style={{ fontFamily: 'var(--font-mono)' }}>
-                      Demo Pass: Ilmenau2026!
-                    </span>
                     <button
                       type="button"
                       className="footer-link-btn"
                       style={{ color: '#0D9488', fontWeight: 600 }}
                       onClick={() => {
                         setResetEmail(loginEmail);
+                        setResetStep('REQUEST');
                         switchTab('FORGOT_PASSWORD');
                       }}
                     >
                       Forgot Password?
+                    </button>
+                    <button
+                      type="button"
+                      className="footer-link-btn"
+                      style={{ color: '#0D9488', fontWeight: 600 }}
+                      onClick={() => switchTab('REGISTER')}
+                    >
+                      New here? Register
                     </button>
                   </div>
                   <button type="submit" className="btn-primary-teal" disabled={busy}>
@@ -406,6 +402,16 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                   <button type="submit" className="btn-primary-teal" disabled={busy}>
                     {busy ? 'Creating Account...' : 'Register & Send Verification Code'}
                   </button>
+                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="footer-link-btn"
+                      style={{ color: '#0D9488', fontWeight: 600 }}
+                      onClick={() => switchTab('LOGIN')}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
                 </form>
               )}
 
@@ -444,6 +450,16 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                   <button type="submit" className="btn-primary-teal" disabled={busy}>
                     {busy ? 'Verifying Code...' : 'Verify Email & Activate Account'}
                   </button>
+                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="footer-link-btn"
+                      style={{ color: '#0D9488', fontWeight: 600 }}
+                      onClick={() => switchTab('LOGIN')}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
                 </form>
               )}
 
@@ -466,6 +482,16 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                       <button type="submit" className="btn-primary-teal" disabled={busy}>
                         {busy ? 'Sending Reset Code...' : 'Send 6-Digit Password Reset Code'}
                       </button>
+                      <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="footer-link-btn"
+                          style={{ color: '#0D9488', fontWeight: 600 }}
+                          onClick={() => switchTab('LOGIN')}
+                        >
+                          Back to Sign In
+                        </button>
+                      </div>
                     </form>
                   ) : (
                     <form onSubmit={handleResetConfirmSubmit}>
@@ -516,6 +542,16 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                       <button type="submit" className="btn-primary-teal" disabled={busy}>
                         {busy ? 'Updating Password...' : 'Update Password'}
                       </button>
+                      <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="footer-link-btn"
+                          style={{ color: '#0D9488', fontWeight: 600 }}
+                          onClick={() => switchTab('LOGIN')}
+                        >
+                          Back to Sign In
+                        </button>
+                      </div>
                     </form>
                   )}
                 </>

@@ -10,11 +10,11 @@ type FrameworkTab = 'REACT' | 'ANGULAR' | 'VUE';
 export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
   onReturnStorefront,
 }) => {
-  const [title, setTitle] = useState('Dell 27 USB-C Monitor');
-  const [price, setPrice] = useState(140);
+  const [title, setTitle] = useState('HP Omnibook 3 Laptop');
+  const [price, setPrice] = useState(450);
   const [priceType, setPriceType] = useState<'FIXED' | 'VB'>('VB');
   const [category] = useState('Electronics & Monitors');
-  const [condition, setCondition] = useState('Excellent');
+  const [condition, setCondition] = useState('Like New');
   const [pickupLocation, setPickupLocation] = useState('Ehrenbergstrasse, Zusebau');
   const [status, setStatus] = useState<ListingStatus>('RESERVED');
   const [favorited, setFavorited] = useState(false);
@@ -27,9 +27,7 @@ export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
   const previewSearchRef = useRef<HTMLElement | null>(null);
   const previewCarouselRef = useRef<HTMLElement | null>(null);
 
-  const previewSvg1 = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#E2E8F0"/><rect x="180" y="130" width="440" height="270" rx="12" fill="#003a63" stroke="#0F172A" stroke-width="10"/><text x="400" y="275" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="24" font-weight="700" fill="#FFFFFF">${title.replace(/[<>&"']/g, '')}</text><rect x="370" y="400" width="60" height="60" fill="#475569"/><rect x="290" y="460" width="220" height="16" rx="6" fill="#1E293B"/></svg>`
-  )}`;
+  const mockImagePath = '/assets/Hp.webp';
   const previewSvg2 = `data:image/svg+xml;utf8,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#0F172A"/><rect x="120" y="120" width="560" height="360" rx="12" fill="#1E293B" stroke="#0D9488" stroke-width="6"/><text x="400" y="290" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="24" font-weight="700" fill="#14B8A6">SLIDE 2 // PORTS &amp; USB-C HUB</text></svg>`
   )}`;
@@ -44,17 +42,17 @@ export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
     node.category = category;
     node.condition = condition;
     node.pickupLocation = pickupLocation;
-    node.imageUrl = previewSvg1;
+    node.imageUrl = mockImagePath;
     node.status = status;
     node.favorited = favorited;
-  }, [title, price, priceType, category, condition, pickupLocation, status, favorited, previewSvg1]);
+  }, [title, price, priceType, category, condition, pickupLocation, status, favorited, mockImagePath]);
 
   useEffect(() => {
     const carouselNode = previewCarouselRef.current as any;
     if (!carouselNode) return;
-    carouselNode.images = [previewSvg1, previewSvg2];
+    carouselNode.images = [mockImagePath, previewSvg2];
     carouselNode.caption = title;
-  }, [previewSvg1, previewSvg2, title]);
+  }, [mockImagePath, previewSvg2, title]);
 
   useEffect(() => {
     const cardNode = previewCardRef.current;
@@ -122,9 +120,11 @@ export function CampusCardHost() {
       title="${title}"
       price="${price}"
       price-type="${priceType}"
+      category="${category}"
       status="${status}"
       condition="${condition}"
       pickup-location="${pickupLocation}"
+      image-url="${mockImagePath}"
     />
   );
 }`,
@@ -143,8 +143,11 @@ import '@ilmexchange/components/lit/ilm-image-carousel';
       [title]="'${title}'"
       [price]="${price}"
       [priceType]="'${priceType}'"
+      [category]="'${category}'"
+      [condition]="'${condition}'"
       [status]="'${status}'"
       [pickupLocation]="'${pickupLocation}'"
+      [imageUrl]="'${mockImagePath}'"
       (ilm-favorite-toggle)="onFavoriteToggle($event)"
     ></ilm-listing-card>
   \`
@@ -170,8 +173,11 @@ function handleFavoriteToggle(event: CustomEvent) {
     title="${title}"
     :price="${price}"
     price-type="${priceType}"
+    category="${category}"
+    condition="${condition}"
     status="${status}"
     pickup-location="${pickupLocation}"
+    image-url="${mockImagePath}"
     @ilm-favorite-toggle="handleFavoriteToggle"
   />
 </template>`,
@@ -278,7 +284,7 @@ function handleFavoriteToggle(event: CustomEvent) {
               condition,
               status,
               'pickup-location': pickupLocation,
-              'image-url': previewSvg1,
+              'image-url': mockImagePath,
             })}
           </div>
         </div>
@@ -299,6 +305,8 @@ function handleFavoriteToggle(event: CustomEvent) {
             >
               {React.createElement('ilm-image-carousel', {
                 ref: previewCarouselRef,
+                images: JSON.stringify([mockImagePath, previewSvg2]),
+                caption: title,
               })}
               <div>
                 <div

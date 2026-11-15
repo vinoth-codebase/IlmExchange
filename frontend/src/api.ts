@@ -34,6 +34,7 @@ export interface MessageItem {
   sender_id: number;
   receiver_id: number;
   content: string;
+  is_read?: number;
   created_at: string;
   sender_name?: string;
   sender_email?: string;
@@ -54,6 +55,7 @@ export interface MessageThread {
   seller_contact: string;
   counterpart_id: number;
   counterpart_name: string;
+  unread_count?: number;
   messages: MessageItem[];
 }
 
@@ -81,17 +83,24 @@ export const SALES_CATEGORIES = [
   'Kitchen & Appliances',
   'Electronics & Monitors',
   'Study & Textbooks',
+  'Others',
 ] as const;
 
 export const CAMPUS_LOCATIONS = [
-  'Max-Planck-Ring, Haus A',
-  'Max-Planck-Ring, Haus B',
-  'Max-Planck-Ring, Haus D',
-  'Max-Planck-Ring, Haus K',
-  'Max-Planck-Ring, Haus M',
-  'Max-Planck-Ring, Haus N',
-  'Ehrenbergstrasse, Zusebau',
-  'Helmholtzplatz, Helmholtzbau',
+  'City Center (Ilmenau Stadtmitte)',
+  'Mensa Ehrenberg',
+  'Haus A',
+  'Haus C',
+  'Haus D',
+  'Haus E',
+  'Haus H',
+  'Haus I',
+  'Haus K',
+  'Haus L',
+  'Haus N',
+  'Haus P',
+  'Haus Q',
+  'Haus Zapf',
 ] as const;
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -404,6 +413,20 @@ export async function fetchMessageSessions(
   return data;
 }
 
+export async function markMessagesAsRead(
+  token: string,
+  listingId: number
+): Promise<void> {
+  await apiFetch('/api/messages/read', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ listing_id: listingId }),
+  }).catch(() => {});
+}
+
 export async function fetchAdminOverview(token: string): Promise<AdminOverviewResponse> {
   const response = await apiFetch('/api/admin/overview', {
     headers: {
@@ -415,4 +438,17 @@ export async function fetchAdminOverview(token: string): Promise<AdminOverviewRe
     throw new Error(data.error || 'Failed to fetch admin overview.');
   }
   return data;
+}
+
+export async function deleteUserById(token: string, userId: number): Promise<void> {
+  const response = await apiFetch(`/api/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to delete user profile.');
+  }
 }

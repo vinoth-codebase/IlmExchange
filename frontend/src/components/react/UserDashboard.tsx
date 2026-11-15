@@ -126,7 +126,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <th>Price</th>
                 <th>Photos</th>
                 <th>Pickup Location</th>
-                <th>Lifecycle Status (Dropdown / Quick Switch)</th>
+                <th>LIFECYCLE STATUS</th>
                 <th>Actions</th>
               </tr>
             </thead>

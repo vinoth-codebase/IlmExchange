@@ -525,6 +525,7 @@ app.get('/api/messages/session', requireAuth, (req: AuthenticatedRequest, res: R
         seller_contact: string;
         counterpart_id: number;
         counterpart_name: string;
+        unread_count: number;
         messages: MessageRecord[];
       }
     >();
@@ -549,6 +550,7 @@ app.get('/api/messages/session', requireAuth, (req: AuthenticatedRequest, res: R
           seller_contact: row.seller_contact || '+49 3677 69-0',
           counterpart_id: counterpartId,
           counterpart_name: counterpartName,
+          unread_count: 0,
           messages: [],
         });
       }
@@ -556,12 +558,16 @@ app.get('/api/messages/session', requireAuth, (req: AuthenticatedRequest, res: R
       const group = groupedMap.get(row.listing_id)!;
       group.counterpart_id = counterpartId;
       group.counterpart_name = counterpartName;
+      if (row.receiver_id === userId && !row.is_read) {
+        group.unread_count += 1;
+      }
       group.messages.push({
         id: row.id,
         listing_id: row.listing_id,
         sender_id: row.sender_id,
         receiver_id: row.receiver_id,
         content: row.content,
+        is_read: Number(row.is_read || 0),
         created_at: row.created_at,
         sender_name: row.sender_name,
         sender_email: row.sender_email,
@@ -577,6 +583,26 @@ app.get('/api/messages/session', requireAuth, (req: AuthenticatedRequest, res: R
   } catch (error) {
     console.error('[Server] Failed to fetch message sessions:', error);
     res.status(500).json({ error: 'Failed to retrieve message history.' });
+  }
+});
+
+// PATCH /api/messages/read (Mark messages in a listing thread as read for the authenticated user)
+app.patch('/api/messages/read', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const listingId = Number(req.body?.listing_id ?? req.body?.listingId);
+    if (Number.isNaN(listingId)) {
+      res.status(400).json({ error: 'Valid listing_id is required.' });
+      return;
+    }
+
+    db.prepare(
+      'UPDATE messages SET is_read = 1 WHERE listing_id = ? AND receiver_id = ?'
+    ).run(listingId, req.user!.id);
+
+    res.json({ success: true, listing_id: listingId });
+  } catch (error) {
+    console.error('[Server] Failed to mark messages as read:', error);
+    res.status(500).json({ error: 'Failed to update message read status.' });
   }
 });
 
@@ -605,6 +631,73 @@ app.get('/api/admin/overview', requireAdmin, (_req: AuthenticatedRequest, res: R
   } catch (error) {
     console.error('[Server] Failed to fetch admin overview:', error);
     res.status(500).json({ error: 'Failed to load admin overview.' });
+  }
+});
+
+// DELETE /api/users/:id (Admin-only cascading user deletion)
+app.delete('/api/users/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const targetUserId = Number(req.params.id);
+    if (Number.isNaN(targetUserId)) {
+      res.status(400).json({ error: 'Invalid user ID.' });
+      return;
+    }
+
+    const userRecord = db
+      .prepare('SELECT id, email, role FROM users WHERE id = ?')
+      .get(targetUserId) as { id: number; email: string; role: string } | undefined;
+
+    if (!userRecord) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+
+    if (
+      userRecord.id === req.user!.id ||
+      userRecord.email.toLowerCase() === req.user!.email.toLowerCase()
+    ) {
+      res.status(400).json({ error: 'Administrators cannot delete their own active account.' });
+      return;
+    }
+
+    // Collect all uploaded image files associated with this user's listings
+    const userListings = db
+      .prepare('SELECT id, image_url FROM listings WHERE seller_id = ?')
+      .all(targetUserId) as Array<{ id: number; image_url: string }>;
+
+    const getListingImagesStmt = db.prepare(
+      'SELECT image_url FROM listing_images WHERE listing_id = ?'
+    );
+
+    for (const listing of userListings) {
+      removeUploadedFileIfPresent(listing.image_url);
+      const galleryImages = getListingImagesStmt.all(listing.id) as Array<{ image_url: string }>;
+      for (const img of galleryImages) {
+        removeUploadedFileIfPresent(img.image_url);
+      }
+    }
+
+    const deleteUserTx = db.transaction(() => {
+      db.prepare('DELETE FROM auth_codes WHERE LOWER(email) = LOWER(?)').run(userRecord.email);
+      db.prepare(
+        `DELETE FROM messages
+         WHERE sender_id = ?
+            OR receiver_id = ?
+            OR listing_id IN (SELECT id FROM listings WHERE seller_id = ?)`
+      ).run(targetUserId, targetUserId, targetUserId);
+      db.prepare(
+        'DELETE FROM listing_images WHERE listing_id IN (SELECT id FROM listings WHERE seller_id = ?)'
+      ).run(targetUserId);
+      db.prepare('DELETE FROM listings WHERE seller_id = ?').run(targetUserId);
+      db.prepare('DELETE FROM users WHERE id = ?').run(targetUserId);
+    });
+
+    deleteUserTx();
+
+    res.json({ success: true, deletedId: targetUserId });
+  } catch (error) {
+    console.error('[Server] Failed to delete user:', error);
+    res.status(500).json({ error: 'Failed to delete user profile.' });
   }
 });
 

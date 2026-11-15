@@ -143,10 +143,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
 
       <div className="section-header-bar">
         <div className="section-title-wrap">
-          <h1 className="section-title">New Items</h1>
-          <span className="section-telemetry">
-            GRID 2x4 // SHOWING {visibleListings.length} OF {listings.length} VERIFIED LISTINGS // CLICK ANY CARD FOR GALLERY &amp; SELLER CHAT
-          </span>
+          <h1 className="section-title">Suggested</h1>
         </div>
 
         <div className="carousel-controls">

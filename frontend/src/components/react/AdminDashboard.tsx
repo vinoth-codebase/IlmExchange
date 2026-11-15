@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   deleteListingById,
+  deleteUserById,
   fetchAdminOverview,
   Listing,
   User,
@@ -24,6 +25,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState<string>('');
+  const [deleteBusy, setDeleteBusy] = useState<boolean>(false);
+
   const loadOverview = async () => {
     if (!token) return;
     setLoading(true);
@@ -46,6 +51,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setLoading(false);
     }
   }, [currentUser, token]);
+
+  useEffect(() => {
+    if (!userToDelete) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleteBusy) {
+        setUserToDelete(null);
+        setDeleteConfirmInput('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [userToDelete, deleteBusy]);
 
   if (!currentUser || currentUser.role !== 'ADMIN') {
     return (
@@ -74,6 +91,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       onListingsChanged();
     } catch (err: any) {
       setError(err.message || 'Failed to delete listing.');
+    }
+  };
+
+  const openDeleteUserModal = (targetUser: User) => {
+    setError(null);
+    setDeleteConfirmInput('');
+    setUserToDelete(targetUser);
+  };
+
+  const closeDeleteUserModal = () => {
+    if (deleteBusy) return;
+    setUserToDelete(null);
+    setDeleteConfirmInput('');
+  };
+
+  const isConfirmMatch =
+    Boolean(userToDelete) &&
+    (deleteConfirmInput === 'DELETE' ||
+      deleteConfirmInput.trim() === userToDelete!.email);
+
+  const handleConfirmDeleteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !userToDelete || !isConfirmMatch) return;
+    setDeleteBusy(true);
+    setError(null);
+    try {
+      const targetId = userToDelete.id;
+      await deleteUserById(token, targetId);
+      setUsers((prev) => prev.filter((u) => u.id !== targetId));
+      setListings((prev) => prev.filter((item) => item.seller_id !== targetId));
+      setUserToDelete(null);
+      setDeleteConfirmInput('');
+      onListingsChanged();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete user profile.');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -153,24 +207,145 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th>Email</th>
                   <th>Role</th>
                   <th>Created At</th>
+                  <th>MODERATION</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td className="mono-cell">#{u.id}</td>
-                    <td>{u.name}</td>
-                    <td className="mono-cell">{u.email}</td>
-                    <td>
-                      <span className="role-pill">{u.role}</span>
-                    </td>
-                    <td className="mono-cell">{u.created_at}</td>
-                  </tr>
-                ))}
+                {users.map((u) => {
+                  const isCurrentAdmin =
+                    u.email.toLowerCase() === currentUser.email.toLowerCase();
+                  return (
+                    <tr key={u.id}>
+                      <td className="mono-cell">#{u.id}</td>
+                      <td>{u.name}</td>
+                      <td className="mono-cell">{u.email}</td>
+                      <td>
+                        <span className="role-pill">{u.role}</span>
+                      </td>
+                      <td className="mono-cell">{u.created_at}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={`btn-danger-outline ${
+                            isCurrentAdmin ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          disabled={isCurrentAdmin}
+                          style={
+                            isCurrentAdmin
+                              ? { opacity: 0.45, cursor: 'not-allowed' }
+                              : undefined
+                          }
+                          onClick={() => {
+                            if (!isCurrentAdmin) {
+                              openDeleteUserModal(u);
+                            }
+                          }}
+                        >
+                          Delete Profile
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </>
+      )}
+
+      {userToDelete && (
+        <div className="modal-backdrop" onClick={closeDeleteUserModal}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: '500px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>Confirm User Profile Deletion</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={closeDeleteUserModal}
+                aria-label="Close modal"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleConfirmDeleteUser}>
+                <p
+                  style={{
+                    margin: '0 0 14px 0',
+                    fontSize: '13.5px',
+                    lineHeight: 1.55,
+                    color: '#334155',
+                  }}
+                >
+                  Are you sure you want to delete the profile for{' '}
+                  <strong>{userToDelete.name}</strong>? This will permanently remove their account, active listings, and message history.
+                </p>
+
+                <div className="form-field">
+                  <label htmlFor="confirm-delete-user-input">
+                    Type <strong>DELETE</strong> (or{' '}
+                    <code style={{ fontFamily: 'var(--font-mono)' }}>{userToDelete.email}</code>) to confirm
+                  </label>
+                  <input
+                    id="confirm-delete-user-input"
+                    type="text"
+                    className="form-input"
+                    value={deleteConfirmInput}
+                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                    placeholder="DELETE"
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                  <button
+                    type="button"
+                    className="category-chip"
+                    style={{ flex: 1, textAlign: 'center' }}
+                    onClick={closeDeleteUserModal}
+                    disabled={deleteBusy}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`btn-danger-outline ${
+                      !isConfirmMatch || deleteBusy ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={!isConfirmMatch || deleteBusy}
+                    style={{
+                      flex: 1.4,
+                      padding: '9px 14px',
+                      backgroundColor: isConfirmMatch && !deleteBusy ? '#991B1B' : '#FEE2E2',
+                      color: isConfirmMatch && !deleteBusy ? '#FFFFFF' : '#991B1B',
+                      borderColor: '#FCA5A5',
+                      opacity: !isConfirmMatch || deleteBusy ? 0.5 : 1,
+                      cursor: !isConfirmMatch || deleteBusy ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {deleteBusy ? 'Deleting User...' : 'Permanently Delete User'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

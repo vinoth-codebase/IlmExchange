@@ -157,6 +157,12 @@ export class IlmFavoritesDrawer extends LitElement {
     this.loadFromStorage();
   };
 
+  private keydownHandler = (e: KeyboardEvent) => {
+    if (this.open && e.key === 'Escape') {
+      this.handleClose();
+    }
+  };
+
   constructor() {
     super();
     this.open = false;
@@ -168,11 +174,13 @@ export class IlmFavoritesDrawer extends LitElement {
     this.loadFromStorage();
     window.addEventListener('ilm-favorites-updated', this.storageSyncHandler);
     window.addEventListener('storage', this.storageSyncHandler);
+    window.addEventListener('keydown', this.keydownHandler);
   }
 
   disconnectedCallback() {
     window.removeEventListener('ilm-favorites-updated', this.storageSyncHandler);
     window.removeEventListener('storage', this.storageSyncHandler);
+    window.removeEventListener('keydown', this.keydownHandler);
     super.disconnectedCallback();
   }
 
@@ -225,7 +233,21 @@ export class IlmFavoritesDrawer extends LitElement {
         <aside class="drawer" @click=${(e: Event) => e.stopPropagation()}>
           <div class="drawer-header">
             <h2 class="drawer-title">Saved Favorites (${this.items.length})</h2>
-            <button type="button" class="close-btn" @click=${this.handleClose}>ESC</button>
+            <button type="button" class="close-btn" aria-label="Close drawer" @click=${this.handleClose}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
           <div class="drawer-content">
             ${this.items.length === 0

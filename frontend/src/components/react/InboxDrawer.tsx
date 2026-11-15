@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   fetchMessageSessions,
+  markMessagesAsRead,
   MessageThread,
   sendMessageToSeller,
   User,
@@ -23,6 +24,7 @@ export const InboxDrawer: React.FC<InboxDrawerProps> = ({
 }) => {
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [activeListingId, setActiveListingId] = useState<number | null>(null);
+  const [readListingIds, setReadListingIds] = useState<Set<number>>(() => new Set());
   const [replyText, setReplyText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [sending, setSending] = useState<boolean>(false);
@@ -51,10 +53,57 @@ export const InboxDrawer: React.FC<InboxDrawerProps> = ({
     }
   }, [open, token]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const activeThread =
     threads.find((t) => t.listing_id === activeListingId) || threads[0] || null;
+
+  const isThreadUnread = (thread: MessageThread): boolean => {
+    if (readListingIds.has(thread.listing_id)) {
+      return false;
+    }
+    if (typeof thread.unread_count === 'number') {
+      return thread.unread_count > 0;
+    }
+    if (!currentUser) return false;
+    return thread.messages.some(
+      (msg) => msg.receiver_id === currentUser.id && !msg.is_read
+    );
+  };
+
+  const handleSelectThread = (listingId: number) => {
+    setActiveListingId(listingId);
+    setReadListingIds((prev) => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.listing_id === listingId
+          ? {
+              ...t,
+              unread_count: 0,
+              messages: t.messages.map((m) => ({ ...m, is_read: 1 })),
+            }
+          : t
+      )
+    );
+    if (token) {
+      markMessagesAsRead(token, listingId);
+    }
+  };
 
   const handleReplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +119,7 @@ export const InboxDrawer: React.FC<InboxDrawerProps> = ({
       setThreads((prev) =>
         prev.map((thread) =>
           thread.listing_id === activeThread.listing_id
-            ? { ...thread, messages: [...thread.messages, sent] }
+            ? { ...thread, unread_count: 0, messages: [...thread.messages, sent] }
             : thread
         )
       );
@@ -93,8 +142,20 @@ export const InboxDrawer: React.FC<InboxDrawerProps> = ({
           <div>
             <h3>Campus Messaging Inbox ({threads.length})</h3>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>
-            ESC
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 
@@ -129,21 +190,70 @@ export const InboxDrawer: React.FC<InboxDrawerProps> = ({
               ) : (
                 threads.map((thread) => {
                   const isSelected = activeThread?.listing_id === thread.listing_id;
+                  const unread = isThreadUnread(thread);
                   const lastMsg = thread.messages[thread.messages.length - 1];
                   return (
                     <button
                       key={thread.listing_id}
                       type="button"
-                      className={`inbox-thread-item ${isSelected ? 'active' : ''}`}
-                      onClick={() => setActiveListingId(thread.listing_id)}
+                      className={`inbox-thread-item ${isSelected ? 'active' : ''} ${
+                        unread ? 'unread' : ''
+                      }`}
+                      style={
+                        unread
+                          ? {
+                              backgroundColor: '#F0FDFA',
+                              borderLeft: '3px solid #0D9488',
+                              fontWeight: 700,
+                            }
+                          : undefined
+                      }
+                      onClick={() => handleSelectThread(thread.listing_id)}
                     >
-                      <div className="inbox-thread-title">{thread.listing_title}</div>
-                      <div className="inbox-thread-sub">
+                      <div
+                        className="inbox-thread-title"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                          fontWeight: unread ? 700 : 600,
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {thread.listing_title}
+                        </span>
+                        {unread && (
+                          <span
+                            aria-label="Unread messages"
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: '#0D9488',
+                              flexShrink: 0,
+                              display: 'inline-block',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div
+                        className="inbox-thread-sub"
+                        style={{ fontWeight: unread ? 700 : 400 }}
+                      >
                         With: <strong>{thread.counterpart_name}</strong> // EUR{' '}
                         {Number(thread.listing_price).toFixed(0)}
                       </div>
                       {lastMsg && (
-                        <div className="inbox-thread-preview">{lastMsg.content}</div>
+                        <div
+                          className="inbox-thread-preview"
+                          style={{
+                            fontWeight: unread ? 700 : 400,
+                            color: unread ? '#0F172A' : undefined,
+                          }}
+                        >
+                          {lastMsg.content}
+                        </div>
                       )}
                     </button>
                   );

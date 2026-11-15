@@ -173,6 +173,7 @@ export class IlmSearchBar extends LitElement {
             <option value="Kitchen & Appliances">Kitchen & Appliances</option>
             <option value="Electronics & Monitors">Electronics & Monitors</option>
             <option value="Study & Textbooks">Study & Textbooks</option>
+            <option value="Others">Others</option>
           </select>
           <select
             class="campus-select"
@@ -180,15 +181,21 @@ export class IlmSearchBar extends LitElement {
             .value=${this.campus}
             @change=${this.handleCampusChange}
           >
-            <option value="ALL">Campus: All</option>
+            <option value="ALL">All Campus Locations</option>
+            <option value="City Center (Ilmenau Stadtmitte)">City Center (Ilmenau Stadtmitte)</option>
+            <option value="Mensa Ehrenberg">Mensa Ehrenberg</option>
             <option value="Haus A">Haus A</option>
-            <option value="Haus B">Haus B</option>
+            <option value="Haus C">Haus C</option>
             <option value="Haus D">Haus D</option>
+            <option value="Haus E">Haus E</option>
+            <option value="Haus H">Haus H</option>
+            <option value="Haus I">Haus I</option>
             <option value="Haus K">Haus K</option>
-            <option value="Haus M">Haus M</option>
+            <option value="Haus L">Haus L</option>
             <option value="Haus N">Haus N</option>
-            <option value="Zusebau">Zusebau</option>
-            <option value="Helmholtzbau">Helmholtzbau</option>
+            <option value="Haus P">Haus P</option>
+            <option value="Haus Q">Haus Q</option>
+            <option value="Haus Zapf">Haus Zapf</option>
           </select>
         </div>
         <input

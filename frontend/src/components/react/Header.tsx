@@ -70,10 +70,15 @@ export const Header: React.FC<HeaderProps> = ({
           className="brand-button"
           onClick={() => onNavigate('STOREFRONT')}
         >
-          <span className="brand-mark">TU ILMENAU</span>
+          <img
+            src="/assets/Uni Logo.jpeg"
+            alt="TU Ilmenau Logo"
+            className="h-9 object-contain"
+            style={{ height: '36px', width: 'auto', objectFit: 'contain', display: 'block' }}
+          />
           <span className="brand-title-group">
-            <span className="brand-university">IlmExchange Campus Portal</span>
-            <span className="brand-subtitle">Peer-to-Peer Student Marketplace</span>
+            <span className="brand-university">IlmExchange</span>
+            <span className="brand-subtitle">Peer to Peer student marketplace</span>
           </span>
         </button>
 

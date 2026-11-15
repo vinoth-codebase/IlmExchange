@@ -71,6 +71,7 @@ export interface MessageRecord {
   sender_id: number;
   receiver_id: number;
   content: string;
+  is_read?: number;
   created_at: string;
   sender_name?: string;
   sender_email?: string;
@@ -133,6 +134,7 @@ export function initializeDatabase(): void {
       sender_id INTEGER NOT NULL,
       receiver_id INTEGER NOT NULL,
       content TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
       FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -154,6 +156,9 @@ export function initializeDatabase(): void {
     db.exec(
       `ALTER TABLE listings ADD COLUMN status TEXT NOT NULL DEFAULT 'AVAILABLE'`
     );
+  }
+  if (!hasColumn('messages', 'is_read')) {
+    db.exec(`ALTER TABLE messages ADD COLUMN is_read INTEGER NOT NULL DEFAULT 0`);
   }
 }
 
