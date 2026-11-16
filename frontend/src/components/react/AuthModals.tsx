@@ -39,8 +39,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   const [busy, setBusy] = useState<boolean>(false);
 
   // Login State
-  const [loginEmail, setLoginEmail] = useState<string>('admin@ilmexchange.com');
-  const [loginPassword, setLoginPassword] = useState<string>('Admin123!');
+  const [loginEmail, setLoginEmail] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
 
   // Register State
   const [regName, setRegName] = useState<string>('');
@@ -279,7 +279,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                       className="form-input"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="admin@ilmexchange.com"
+                      placeholder="Enter your email"
                     />
                   </div>
                   <div className="form-field">
@@ -476,7 +476,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                           className="form-input"
                           value={resetEmail}
                           onChange={(e) => setResetEmail(e.target.value)}
-                          placeholder="vinothofficial14@gmail.com"
+                          placeholder="Enter your email"
                         />
                       </div>
                       <button type="submit" className="btn-primary-teal" disabled={busy}>
