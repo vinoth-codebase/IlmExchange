@@ -212,7 +212,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </thead>
               <tbody>
                 {users.map((u) => {
-                  const isCurrentAdmin =
+                  const isProtectedAdmin =
+                    u.role === 'ADMIN' ||
                     u.email.toLowerCase() === currentUser.email.toLowerCase();
                   return (
                     <tr key={u.id}>
@@ -227,21 +228,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           type="button"
                           className={`btn-danger-outline ${
-                            isCurrentAdmin ? 'opacity-50 cursor-not-allowed' : ''
+                            isProtectedAdmin ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
-                          disabled={isCurrentAdmin}
+                          disabled={isProtectedAdmin}
+                          title={
+                            isProtectedAdmin
+                              ? 'Action denied: Admin accounts cannot be deleted.'
+                              : 'Delete student profile'
+                          }
                           style={
-                            isCurrentAdmin
+                            isProtectedAdmin
                               ? { opacity: 0.45, cursor: 'not-allowed' }
                               : undefined
                           }
                           onClick={() => {
-                            if (!isCurrentAdmin) {
+                            if (!isProtectedAdmin) {
                               openDeleteUserModal(u);
                             }
                           }}
                         >
-                          Delete Profile
+                          {isProtectedAdmin ? 'Admin Protected' : 'Delete Profile'}
                         </button>
                       </td>
                     </tr>

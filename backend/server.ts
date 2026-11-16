@@ -652,11 +652,11 @@ app.delete('/api/users/:id', requireAdmin, (req: AuthenticatedRequest, res: Resp
       return;
     }
 
-    if (
-      userRecord.id === req.user!.id ||
-      userRecord.email.toLowerCase() === req.user!.email.toLowerCase()
-    ) {
-      res.status(400).json({ error: 'Administrators cannot delete their own active account.' });
+    if (userRecord.role === 'ADMIN') {
+      res.status(403).json({
+        error: 'Action denied: Admin accounts cannot be deleted.',
+        message: 'Action denied: Admin accounts cannot be deleted.',
+      });
       return;
     }
 

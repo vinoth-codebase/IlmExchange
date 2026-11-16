@@ -12,6 +12,12 @@ import { sendAuthCodeEmail } from './mailer';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ilmexchange-tu-ilmenau-jwt-secret-key-2026';
 export const ADMIN_EMAIL = 'vinothofficial14@gmail.com';
+export const DEMO_ADMIN_EMAIL = 'admin@ilmexchange.com';
+
+export function isAdminEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase();
+  return normalized === ADMIN_EMAIL || normalized === DEMO_ADMIN_EMAIL;
+}
 
 export interface AuthTokenPayload {
   id: number;
@@ -120,7 +126,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       .get(email) as UserRecord | undefined;
 
     const passwordHash = bcrypt.hashSync(password, 10);
-    const assignedRole: 'ADMIN' | 'STUDENT' = email === ADMIN_EMAIL ? 'ADMIN' : 'STUDENT';
+    const assignedRole: 'ADMIN' | 'STUDENT' = isAdminEmail(email) ? 'ADMIN' : 'STUDENT';
 
     if (existing) {
       db.prepare(`

@@ -39,8 +39,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   const [busy, setBusy] = useState<boolean>(false);
 
   // Login State
-  const [loginEmail, setLoginEmail] = useState<string>('vinothofficial14@gmail.com');
-  const [loginPassword, setLoginPassword] = useState<string>('Ilmenau2026!');
+  const [loginEmail, setLoginEmail] = useState<string>('admin@ilmexchange.com');
+  const [loginPassword, setLoginPassword] = useState<string>('Admin123!');
 
   // Register State
   const [regName, setRegName] = useState<string>('');
@@ -271,7 +271,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
               {activeTab === 'LOGIN' && (
                 <form onSubmit={handleLoginSubmit}>
                   <div className="form-field">
-                    <label htmlFor="login-email">Institutional or Gmail Address</label>
+                    <label htmlFor="login-email">Email Address</label>
                     <input
                       id="login-email"
                       type="email"
@@ -279,7 +279,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                       className="form-input"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="vinothofficial14@gmail.com"
+                      placeholder="admin@ilmexchange.com"
                     />
                   </div>
                   <div className="form-field">

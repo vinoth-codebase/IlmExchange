@@ -25,12 +25,8 @@ export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
 
   const previewCardRef = useRef<HTMLElement | null>(null);
   const previewSearchRef = useRef<HTMLElement | null>(null);
-  const previewCarouselRef = useRef<HTMLElement | null>(null);
 
   const mockImagePath = '/assets/Hp.webp';
-  const previewSvg2 = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#0F172A"/><rect x="120" y="120" width="560" height="360" rx="12" fill="#1E293B" stroke="#0D9488" stroke-width="6"/><text x="400" y="290" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="24" font-weight="700" fill="#14B8A6">SLIDE 2 // PORTS &amp; USB-C HUB</text></svg>`
-  )}`;
 
   useEffect(() => {
     const node = previewCardRef.current as any;
@@ -48,16 +44,8 @@ export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
   }, [title, price, priceType, category, condition, pickupLocation, status, favorited, mockImagePath]);
 
   useEffect(() => {
-    const carouselNode = previewCarouselRef.current as any;
-    if (!carouselNode) return;
-    carouselNode.images = [mockImagePath, previewSvg2];
-    carouselNode.caption = title;
-  }, [mockImagePath, previewSvg2, title]);
-
-  useEffect(() => {
     const cardNode = previewCardRef.current;
     const searchNode = previewSearchRef.current;
-    const carouselNode = previewCarouselRef.current;
 
     const handleCardEvent = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -84,23 +72,11 @@ export const ComponentDocs: React.FC<{ onReturnStorefront: () => void }> = ({
       ]);
     };
 
-    const handleSlideEvent = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      setEventLog((prev) => [
-        `[${new Date().toLocaleTimeString()}] CustomEvent("ilm-slide-change") -> slide ${
-          detail.index + 1
-        } of ${detail.total}`,
-        ...prev.slice(0, 7),
-      ]);
-    };
-
     cardNode?.addEventListener('ilm-favorite-toggle', handleCardEvent);
     searchNode?.addEventListener('ilm-search', handleSearchEvent);
-    carouselNode?.addEventListener('ilm-slide-change', handleSlideEvent);
     return () => {
       cardNode?.removeEventListener('ilm-favorite-toggle', handleCardEvent);
       searchNode?.removeEventListener('ilm-search', handleSearchEvent);
-      carouselNode?.removeEventListener('ilm-slide-change', handleSlideEvent);
     };
   }, []);
 
@@ -292,52 +268,37 @@ function handleFavoriteToggle(event: CustomEvent) {
         <div>
           <div className="panel-card">
             <h2 style={{ marginTop: 0, fontSize: '15px' }}>
-              Isolated Multi-Image Carousel (&lt;ilm-image-carousel&gt;) &amp; Search (&lt;ilm-search-bar&gt;)
+              Isolated Search (&lt;ilm-search-bar&gt;) &amp; CustomEvent Telemetry
             </h2>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '260px 1fr',
-                gap: '14px',
-                alignItems: 'start',
-                marginBottom: '12px',
-              }}
-            >
-              {React.createElement('ilm-image-carousel', {
-                ref: previewCarouselRef,
-                images: JSON.stringify([mockImagePath, previewSvg2]),
-                caption: title,
-              })}
-              <div>
-                <div
-                  style={{
-                    backgroundColor: '#003a63',
-                    padding: '12px',
-                    borderRadius: '6px',
-                    marginBottom: '10px',
-                  }}
-                >
-                  {React.createElement('ilm-search-bar', {
-                    ref: previewSearchRef,
-                  })}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11.5px',
-                    backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                  }}
-                >
-                  <strong style={{ color: '#003a63' }}>CustomEvent Stream:</strong>
-                  {eventLog.map((entry, idx) => (
-                    <div key={idx} style={{ marginTop: '4px', color: '#334155' }}>
-                      {entry}
-                    </div>
-                  ))}
-                </div>
+            <div style={{ marginBottom: '12px' }}>
+              <div
+                style={{
+                  backgroundColor: '#003a63',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  marginBottom: '10px',
+                }}
+              >
+                {React.createElement('ilm-search-bar', {
+                  ref: previewSearchRef,
+                })}
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11.5px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                }}
+              >
+                <strong style={{ color: '#003a63' }}>CustomEvent Stream:</strong>
+                {eventLog.map((entry, idx) => (
+                  <div key={idx} style={{ marginTop: '4px', color: '#334155' }}>
+                    {entry}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

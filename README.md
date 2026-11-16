@@ -4,6 +4,18 @@ IlmExchange is a full-stack peer-to-peer student marketplace and cross-framework
 
 ---
 
+## Live Demo Access
+
+- **Live Frontend URL (Vercel):** https://ilm-exchange.vercel.app
+
+### Admin Dashboard Testing
+
+To evaluate the Admin Moderation Console (user management and ad moderation), use the following pre-configured demo credentials:
+**Email:** admin@ilmexchange.com
+**Password:** Admin123!
+
+---
+
 ## Architecture Overview
 
 1. **The Storefront (React 18 + Lit Interop):**
