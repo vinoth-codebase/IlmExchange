@@ -92,10 +92,21 @@ export const AdCanvasModal: React.FC<AdCanvasModalProps> = ({
 
   if (!listing) return null;
 
+  const isOwnListing = Boolean(
+    currentUser &&
+      (listing.seller_id === currentUser.id ||
+        (listing.seller_email &&
+          listing.seller_email.toLowerCase() === currentUser.email.toLowerCase()))
+  );
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !currentUser) {
       onRequireAuth();
+      return;
+    }
+    if (isOwnListing) {
+      setChatError('You cannot send a message to yourself on your own listing.');
       return;
     }
     if (!draftMessage.trim()) return;
@@ -275,7 +286,14 @@ export const AdCanvasModal: React.FC<AdCanvasModalProps> = ({
 
               {chatError && <div className="error-banner">{chatError}</div>}
 
-              {currentUser ? (
+              {isOwnListing ? (
+                <div
+                  className="status-banner"
+                  style={{ marginBottom: 0, textAlign: 'center', fontSize: '12px' }}
+                >
+                  This is your own listing. Manage its status in <strong>My Ads</strong> or reply to buyer inquiries from your <strong>Inbox</strong>.
+                </div>
+              ) : currentUser ? (
                 <form className="canvas-chat-form" onSubmit={handleSendMessage}>
                   <input
                     type="text"

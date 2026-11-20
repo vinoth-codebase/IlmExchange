@@ -245,6 +245,7 @@ export const App: React.FC = () => {
           <Storefront
             listings={listings}
             favorites={favorites}
+            currentUser={currentUser}
             selectedCategory={selectedCategory}
             loading={loading}
             onSelectCategory={(cat) => setSelectedCategory(cat)}

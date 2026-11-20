@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Listing, SALES_CATEGORIES } from '../../api';
+import { Listing, SALES_CATEGORIES, User } from '../../api';
 import { FavoriteToggleDetail } from '../lit/ilm-listing-card';
 import '../lit/ilm-listing-card';
 
@@ -74,6 +74,7 @@ const ListingCardWrapper: React.FC<ListingCardWrapperProps> = ({
 interface StorefrontProps {
   listings: Listing[];
   favorites: Listing[];
+  currentUser?: User | null;
   selectedCategory: string;
   loading: boolean;
   onSelectCategory: (category: string) => void;
@@ -84,6 +85,7 @@ interface StorefrontProps {
 export const Storefront: React.FC<StorefrontProps> = ({
   listings,
   favorites,
+  currentUser = null,
   selectedCategory,
   loading,
   onSelectCategory,
@@ -92,30 +94,42 @@ export const Storefront: React.FC<StorefrontProps> = ({
 }) => {
   const [carouselOffset, setCarouselOffset] = useState(0);
 
+  const suggestedListings: Listing[] = React.useMemo(() => {
+    if (!currentUser) return listings;
+    return listings.filter(
+      (item) =>
+        item.seller_id !== currentUser.id &&
+        (!item.seller_email ||
+          item.seller_email.toLowerCase() !== currentUser.email.toLowerCase())
+    );
+  }, [listings, currentUser]);
+
   useEffect(() => {
     setCarouselOffset(0);
-  }, [selectedCategory, listings.length]);
+  }, [selectedCategory, suggestedListings.length]);
 
   const handlePrev = () => {
-    if (listings.length === 0) return;
-    setCarouselOffset((prev) => (prev - 4 + listings.length) % listings.length);
+    if (suggestedListings.length === 0) return;
+    setCarouselOffset(
+      (prev) => (prev - 4 + suggestedListings.length) % suggestedListings.length
+    );
   };
 
   const handleNext = () => {
-    if (listings.length === 0) return;
-    setCarouselOffset((prev) => (prev + 4) % listings.length);
+    if (suggestedListings.length === 0) return;
+    setCarouselOffset((prev) => (prev + 4) % suggestedListings.length);
   };
 
   const visibleListings: Listing[] = React.useMemo(() => {
-    if (listings.length <= 8 && carouselOffset === 0) {
-      return listings.slice(0, 8);
+    if (suggestedListings.length <= 8 && carouselOffset === 0) {
+      return suggestedListings.slice(0, 8);
     }
     const rotated = [
-      ...listings.slice(carouselOffset),
-      ...listings.slice(0, carouselOffset),
+      ...suggestedListings.slice(carouselOffset),
+      ...suggestedListings.slice(0, carouselOffset),
     ];
     return rotated.slice(0, 8);
-  }, [listings, carouselOffset]);
+  }, [suggestedListings, carouselOffset]);
 
   const favoriteIds = new Set(favorites.map((item) => item.id));
 
@@ -127,7 +141,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
           className={`category-chip ${selectedCategory === 'ALL' ? 'active' : ''}`}
           onClick={() => onSelectCategory('ALL')}
         >
-          All Categories ({listings.length})
+          All Categories ({suggestedListings.length})
         </button>
         {SALES_CATEGORIES.map((category) => (
           <button

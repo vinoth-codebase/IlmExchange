@@ -449,6 +449,13 @@ app.post('/api/messages', requireAuth, (req: AuthenticatedRequest, res: Response
       }
     }
 
+    if (receiverId === req.user!.id) {
+      res.status(400).json({
+        error: 'You cannot send a message to yourself on your own listing.',
+      });
+      return;
+    }
+
     const insertResult = db
       .prepare(`
         INSERT INTO messages (listing_id, sender_id, receiver_id, content)

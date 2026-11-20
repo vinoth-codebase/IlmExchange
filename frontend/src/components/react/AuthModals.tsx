@@ -343,7 +343,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                         className="form-input"
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
-                        placeholder="Lukas Weber"
+                        placeholder="Enter your full name"
                       />
                     </div>
                     <div className="form-field">

@@ -8,23 +8,36 @@ IlmExchange is a full-stack peer-to-peer student marketplace and cross-framework
 
 - **Live Frontend URL (Vercel):** https://ilm-exchange.vercel.app
 
-### Admin Dashboard Testing
+### Demo Credentials (Pre-Verified Accounts)
 
-To evaluate the Admin Moderation Console (user management and ad moderation), use the following pre-configured demo credentials:
-**Email:** admin@ilmexchange.com
-**Password:** Admin123!
+To evaluate the platform's peer-to-peer student workflows (publishing ads, managing ad lifecycle statuses, and testing buyer-seller messaging) as well as the Admin Moderation Console (user management and ad moderation), use the following pre-configured demo accounts:
+
+| Account Role | Name | Email | Password | Capabilities |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin** | Demo Admin | `admin@ilmexchange.com` | `Admin123!` | Full access to the Admin Moderation Console, listing moderation, and student account deletion |
+| **Student 1** | Demo User 1 | `user1@ilmexchange.com` | `User123!` | Publish campus ads, manage "My Ads" lifecycle status (`AVAILABLE` / `RESERVED` / `SOLD`), and chat in Inbox |
+| **Student 2** | Demo User 2 | `user2@ilmexchange.com` | `User123!` | Browse listings, bookmark favorites, message sellers, and test two-way buyer-seller chat with Demo User 1 |
 
 ---
 
 ## Architecture Overview
 
-1. **The Storefront (React 18 + Lit Interop):**
-   - Institutional TU Ilmenau visual language: Slate-White (`#F8FAFC`) canvas, Deep Royal Blue (`#003a63`) navigation bar, and Technical Teal (`#0D9488`) interactive controls.
-   - Compact 2-row by 4-column (`2x4`) grid layout with `4:3` listing media cards designed to fit above the fold, paired with circular `<` and `>` carousel pagination controls.
-   - Passwordless 6-digit OTP email authentication via Gmail SMTP (`nodemailer`) with automatic `ADMIN` role elevation for the institutional moderator (`vinothofficial14@gmail.com`).
-2. **The Component Docs (Cross-Framework Design System Portal):**
-   - Interactive live playground for isolated Lit Web Components (`<ilm-search-bar>`, `<ilm-listing-card>`, `<ilm-favorites-drawer>`).
-   - Real-time property controls, Shadow DOM telemetry inspection, and copy-ready integration snippets for **React**, **Angular**, and **Vue**.
+IlmExchange is engineered as a hybrid micro-frontend and full-stack web application that demonstrates standards-compliant Web Component interoperability alongside a transactional REST API:
+
+1. **Hybrid React 18 Host & Lit 3 Web Component Interoperability:**
+   - The storefront host application is built with **React 18** and **TypeScript**, managing top-level routing, authentication state, and API orchestration.
+   - Core reusable UI primitives—`<ilm-listing-card>`, `<ilm-search-bar>`, `<ilm-image-carousel>`, and `<ilm-favorites-drawer>`—are implemented as framework-agnostic **Lit 3 Custom Elements** utilizing native **Shadow DOM** style encapsulation.
+   - Cross-framework communication is driven by standard DOM properties down and bubbling, composed `CustomEvent` payloads (`ilm-search`, `ilm-card-select`, `ilm-favorite-toggle`, `ilm-slide-change`) up to the React host.
+2. **Peer-to-Peer Marketplace & Ad Lifecycle Management:**
+   - Supports multi-photo item listings (1 to 5 images per ad via `multipart/form-data` uploads) mapped across verified TU Ilmenau campus pickup zones (`Haus A`–`Haus Q`, `Haus Zapf`, `Mensa Ehrenberg`, and `City Center`) and six campus categories.
+   - Sellers can dynamically transition listings through real-time lifecycle states (`AVAILABLE`, `RESERVED`, and `SOLD`) from the **My Ads** dashboard, immediately updating status badges across the storefront and active chat threads.
+   - An automated background cleanup cron job purges expired listings and their associated uploaded image files after 30 days to prevent storage bloat.
+3. **In-App Buyer/Seller Messaging & Authentication Engine:**
+   - Implements JWT-authenticated REST endpoints with `bcrypt` password hashing and 6-digit email verification and password reset workflows via `nodemailer` SMTP (with an automatic local development code fallback).
+   - Provides listing-scoped chat threads inside an interactive **Inbox Drawer** and **Ad Canvas Modal**, complete with per-thread unread message tracking (`is_read` state persistence) and instant buyer-seller reply synchronization.
+4. **Role-Based Admin Moderation & Developer Design System Portal:**
+   - **Admin Moderation Console:** Protected by strict `ADMIN` JWT middleware and role-based safeguards that prevent admin account deletion while enabling cascading deletion of offending student profiles (automatically cleaning up associated listings, uploaded files, messages, and auth codes in a single SQLite transaction).
+   - **Developer API & Design System Portal:** An interactive documentation playground where developers can manipulate live `<ilm-listing-card>` and `<ilm-search-bar>` properties, inspect real-time Shadow DOM `CustomEvent` telemetry streams, and copy production-ready integration code for **React 18**, **Angular**, and **Vue 3**.
 
 ---
 

@@ -70,7 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <h2>Restricted Access — Administrator Role Required</h2>
         <p style={{ color: '#475569', fontSize: '13.5px' }}>
           This moderation console is restricted to authenticated institutional administrators (
-          <code style={{ fontFamily: 'var(--font-mono)' }}>vinothofficial14@gmail.com</code>).
+          <code style={{ fontFamily: 'var(--font-mono)' }}>admin@ilmexchange.com</code>).
         </p>
         <button
           type="button"

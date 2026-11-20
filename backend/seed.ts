@@ -6,6 +6,7 @@ export function seedDatabase(forceResetListings: boolean = false): void {
 
   const defaultPasswordHash = bcrypt.hashSync('Ilmenau2026!', 10);
   const demoAdminPasswordHash = bcrypt.hashSync('Admin123!', 10);
+  const demoUserPasswordHash = bcrypt.hashSync('User123!', 10);
 
   const existingUsersCount = (
     db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }
@@ -22,6 +23,20 @@ export function seedDatabase(forceResetListings: boolean = false): void {
       'Demo Admin',
       '+49 3677 69-0',
       'ADMIN'
+    );
+    insertUser.run(
+      'user1@ilmexchange.com',
+      demoUserPasswordHash,
+      'Demo User 1',
+      '+49 176 34189022',
+      'STUDENT'
+    );
+    insertUser.run(
+      'user2@ilmexchange.com',
+      demoUserPasswordHash,
+      'Demo User 2',
+      '+49 151 78234190',
+      'STUDENT'
     );
     insertUser.run(
       'vinothofficial14@gmail.com',
@@ -69,29 +84,52 @@ export function seedDatabase(forceResetListings: boolean = false): void {
     `).run();
   }
 
-  // Always ensure the permanent Demo Admin account exists and is pre-verified on startup
-  db.prepare(`
+  // Always ensure the permanent Demo Admin and Demo Student accounts exist and are pre-verified on startup
+  const upsertDemoUser = db.prepare(`
     INSERT INTO users (email, password_hash, name, contact_number, is_verified, role)
-    VALUES (?, ?, 'Demo Admin', '+49 3677 69-0', 1, 'ADMIN')
+    VALUES (?, ?, ?, ?, 1, ?)
     ON CONFLICT(email) DO UPDATE SET
       password_hash = excluded.password_hash,
-      name = 'Demo Admin',
+      name = excluded.name,
+      contact_number = excluded.contact_number,
       is_verified = 1,
-      role = 'ADMIN'
-  `).run('admin@ilmexchange.com', demoAdminPasswordHash);
+      role = excluded.role
+  `);
+
+  upsertDemoUser.run(
+    'admin@ilmexchange.com',
+    demoAdminPasswordHash,
+    'Demo Admin',
+    '+49 3677 69-0',
+    'ADMIN'
+  );
+  upsertDemoUser.run(
+    'user1@ilmexchange.com',
+    demoUserPasswordHash,
+    'Demo User 1',
+    '+49 176 34189022',
+    'STUDENT'
+  );
+  upsertDemoUser.run(
+    'user2@ilmexchange.com',
+    demoUserPasswordHash,
+    'Demo User 2',
+    '+49 151 78234190',
+    'STUDENT'
+  );
 
   const adminUser = db
     .prepare('SELECT id FROM users WHERE email = ?')
-    .get('vinothofficial14@gmail.com') as { id: number } | undefined;
-  const student1 = db
+    .get('admin@ilmexchange.com') as { id: number } | undefined;
+  const demoUser1 = db
     .prepare('SELECT id FROM users WHERE email = ?')
-    .get('lukas.weber@tu-ilmenau.de') as { id: number } | undefined;
-  const student2 = db
+    .get('user1@ilmexchange.com') as { id: number } | undefined;
+  const demoUser2 = db
     .prepare('SELECT id FROM users WHERE email = ?')
-    .get('sophie.keller@tu-ilmenau.de') as { id: number } | undefined;
+    .get('user2@ilmexchange.com') as { id: number } | undefined;
 
-  const sellerA = student1?.id || adminUser?.id || 1;
-  const sellerB = student2?.id || adminUser?.id || 1;
+  const sellerA = demoUser1?.id || adminUser?.id || 1;
+  const sellerB = demoUser2?.id || adminUser?.id || 1;
   const sellerAdmin = adminUser?.id || 1;
 
   const existingListingsCount = (
@@ -230,6 +268,18 @@ export function seedDatabase(forceResetListings: boolean = false): void {
     );
   }
 
+  // Migrate any legacy hardcoded greeting names in existing messages
+  db.prepare(`
+    UPDATE messages
+    SET content = REPLACE(content, 'Hello Lukas,', 'Hello Demo User 1,')
+    WHERE content LIKE '%Hello Lukas,%'
+  `).run();
+  db.prepare(`
+    UPDATE messages
+    SET content = REPLACE(content, 'Hi Vinothkumar,', 'Hi Demo Admin,')
+    WHERE content LIKE '%Hi Vinothkumar,%'
+  `).run();
+
   // Seed initial sample messages if messages table is empty
   const existingMessagesCount = (
     db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number }
@@ -237,11 +287,23 @@ export function seedDatabase(forceResetListings: boolean = false): void {
 
   if (existingMessagesCount === 0) {
     const firstListing = db
-      .prepare('SELECT id, seller_id FROM listings ORDER BY id ASC LIMIT 1')
-      .get() as { id: number; seller_id: number } | undefined;
+      .prepare(`
+        SELECT l.id, l.seller_id, u.name as seller_name
+        FROM listings l
+        LEFT JOIN users u ON l.seller_id = u.id
+        ORDER BY l.id ASC
+        LIMIT 1
+      `)
+      .get() as { id: number; seller_id: number; seller_name?: string } | undefined;
     const fourthListing = db
-      .prepare('SELECT id, seller_id FROM listings ORDER BY id ASC LIMIT 1 OFFSET 3')
-      .get() as { id: number; seller_id: number } | undefined;
+      .prepare(`
+        SELECT l.id, l.seller_id, u.name as seller_name
+        FROM listings l
+        LEFT JOIN users u ON l.seller_id = u.id
+        ORDER BY l.id ASC
+        LIMIT 1 OFFSET 3
+      `)
+      .get() as { id: number; seller_id: number; seller_name?: string } | undefined;
 
     const insertMessage = db.prepare(`
       INSERT INTO messages (listing_id, sender_id, receiver_id, content)
@@ -249,11 +311,12 @@ export function seedDatabase(forceResetListings: boolean = false): void {
     `);
 
     if (firstListing && sellerAdmin !== firstListing.seller_id) {
+      const sellerName1 = firstListing.seller_name || 'Demo User 1';
       insertMessage.run(
         firstListing.id,
         sellerAdmin,
         firstListing.seller_id,
-        'Hello Lukas, is the 26-inch Mountain Bike still available for inspection near Haus L today?'
+        `Hello ${sellerName1}, is the 26-inch Mountain Bike still available for inspection near Haus L today?`
       );
       insertMessage.run(
         firstListing.id,
@@ -264,11 +327,12 @@ export function seedDatabase(forceResetListings: boolean = false): void {
     }
 
     if (fourthListing && sellerB !== fourthListing.seller_id) {
+      const sellerName4 = fourthListing.seller_name || 'Demo Admin';
       insertMessage.run(
         fourthListing.id,
         sellerB,
         fourthListing.seller_id,
-        'Hi Vinothkumar, does the Dell G2724D 27" Monitor include the DisplayPort cable?'
+        `Hi ${sellerName4}, does the Dell G2724D 27" Monitor include the DisplayPort cable?`
       );
       insertMessage.run(
         fourthListing.id,
